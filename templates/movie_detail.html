@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Detail</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            /* Example poster image, replace with dynamic URL as needed */
+            background: url('{{ movie.poster_backdrop_url }}') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .center-box {
+            background: rgba(255,255,255,0.9);
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+            max-width: 800px;
+            margin: 48px auto;
+            padding: 32px 32px 32px 32px;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 32px;
+            position: relative;
+        }
+        .poster-img {
+            width: 170px;
+            min-width: 120px;
+            max-width: 170px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.16);
+            margin-right: 24px;
+        }
+        .movie-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .movie-title {
+            font-size: 2.1rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #1a1a1a;
+        }
+        .movie-meta {
+            font-size: 1.1rem;
+            color: #444;
+            margin-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+        }
+        .movie-overview {
+            font-size: 1.05rem;
+            color: #222;
+            margin-bottom: 18px;
+        }
+        .trailer-btn {
+            display: inline-block;
+            background: #e52d27;
+            color: white;
+            font-weight: 500;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px rgba(229,45,39,0.08);
+        }
+        .trailer-btn:hover {
+            background: #b31217;
+        }
+        @media (max-width: 600px) {
+            .center-box {
+                flex-direction: column;
+                align-items: center;
+                padding: 18px 6vw;
+                gap: 18px;
+            }
+            .poster-img {
+                width: 120px;
+                max-width: 120px;
+                margin: 0 0 12px 0;
+            }
+            .movie-title {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="center-box">
+        <!-- Example poster image, replace src with dynamic movie poster -->
+        <img class="poster-img" src="{{ movie.poster_url }}" alt="Movie Poster">
+        <div class="movie-details">
+            <div class="movie-title">{{ movie.title }}</div>
+            <div class="movie-meta">
+                <span><strong>IMDB:</strong> {{ movie.vote_average }}</span>
+                <span><strong>Revenue:</strong> ${{ movie.revenue }}</span>
+                <span><strong>Release:</strong> {{ movie.release_date }}</span>
+            </div>
+            <div class="movie-overview">
+                {{ movie.overview }}
+            </div>
+            <a class="trailer-btn" target="_blank" href="https://www.youtube.com/results?search_query={{ movie.title | replace(' ', '+') }}+trailer">
+                ▶ Watch Trailer on YouTube
+            </a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,699 @@
+<nav class="navbar">
+    <div class="nav-tab" onclick="window.location.href='/'">Home</div>
+</nav>
+<div class="recommendation-form">
+    <h2 style="text-align: center; margin-bottom: 32px;">Find the perfect movie for you!</h2>
+    <form id="movieForm">
+        <div class="question-container">
+            <div class="question-card active-card">
+                <fieldset>
+                    <legend>How are you today?</legend>
+                    <div class="fieldset-options">
+                        <label><input type="radio" name="mood_today" value="happy"> <span>Happy</span></label>
+                        <label><input type="radio" name="mood_today" value="neutral"> <span>Neutral</span></label>
+                        <label><input type="radio" name="mood_today" value="sad"> <span>Sad</span></label>
+                    </div>
+                </fieldset>
+            </div>
+            <div class="question-card enter-from-right">
+                <fieldset>
+                    <legend>What is the occasion?</legend>
+                    <div class="fieldset-options">
+                        <label><input type="radio" name="occasion" value="Watching alone"> <span>Watching alone</span></label>
+                        <label><input type="radio" name="occasion" value="Just sitting free"> <span>Just sitting free</span></label>
+                        <label><input type="radio" name="occasion" value="Special occasion"> <span>Special occasion</span></label>
+                    </div>
+                </fieldset>
+            </div>
+            <div class="question-card enter-from-right genres-card">
+                <fieldset>
+                    <legend>Preferred genres (max 3)</legend>
+                    <div class="scroll-wrapper">
+                        <div class="fieldset-options">
+                            <label><input type="checkbox" name="genres" value="Action"> <span>Action</span></label>
+                            <label><input type="checkbox" name="genres" value="Comedy"> <span>Comedy</span></label>
+                            <label><input type="checkbox" name="genres" value="Drama"> <span>Drama</span></label>
+                            <label><input type="checkbox" name="genres" value="Romance"> <span>Romance</span></label>
+                            <label><input type="checkbox" name="genres" value="Horror"> <span>Horror</span></label>
+                            <label><input type="checkbox" name="genres" value="Sci-Fi"> <span>Sci-Fi</span></label>
+                            <label><input type="checkbox" name="genres" value="Thriller"> <span>Thriller</span></label>
+                            <label><input type="checkbox" name="genres" value="Adventure"> <span>Adventure</span></label>
+                            <label><input type="checkbox" name="genres" value="Fantasy"> <span>Fantasy</span></label>
+                            <label><input type="checkbox" name="genres" value="Animation"> <span>Animation</span></label>
+                            <label><input type="checkbox" name="genres" value="Mystery"> <span>Mystery</span></label>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+            <div class="question-card enter-from-right">
+                <fieldset>
+                    <legend>Age appropriateness</legend>
+                    <div class="fieldset-options">
+                        <label><input type="radio" name="age_appropriateness" value="Yes, it matters"> <span>Yes, it matters</span></label>
+                        <label><input type="radio" name="age_appropriateness" value="No, it doesn’t matter"> <span>No, it doesn’t matter</span></label>
+                    </div>
+                </fieldset>
+            </div>
+            <div class="question-card enter-from-right">
+                <fieldset>
+                    <legend>Timeline of movies</legend>
+                    <div class="fieldset-options">
+                        <label><input type="radio" name="timeline" value="Doesn’t matter"> <span>Doesn’t matter</span></label>
+                        <label><input type="radio" name="timeline" value="Past 5 years"> <span>Past 5 years</span></label>
+                        <label><input type="radio" name="timeline" value="Past 10 years"> <span>Past 10 years</span></label>
+                        <label><input type="radio" name="timeline" value="Past 15 years"> <span>Past 15 years</span></label>
+                        <label><input type="radio" name="timeline" value="Past 25 years"> <span>Past 25 years</span></label>
+                        <label><input type="radio" name="timeline" value="Very Old"> <span>Very Old</span></label>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+        <div id="genreAlert" style="color: red; margin-top: 0.5em; display: none; text-align: center;">You can select up to 3 genres only.</div>
+        <div class="navigation-btn-container">
+            <button id="singleNavBtn" type="button" class="single-nav-btn">Next</button>
+        </div>
+    </form>
+</div>
+<div id="recommendationResults"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('movieForm');
+    const cards = Array.from(form.querySelectorAll('.question-card'));
+    const genreCheckboxes = Array.from(form.querySelectorAll('input[name="genres"]'));
+    const alertDiv = document.getElementById('genreAlert');
+    const navBtn = document.getElementById('singleNavBtn');
+    let currentCardIdx = 0;
+
+    // Enforce max 3 genre selections dynamically with alert message
+    function updateGenreCheckboxes(event) {
+        const checked = genreCheckboxes.filter(cb => cb.checked);
+        if (checked.length > 3) {
+            event.target.checked = false;
+            alertDiv.style.display = 'block';
+        } else {
+            alertDiv.style.display = 'none';
+        }
+    }
+    genreCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateGenreCheckboxes);
+    });
+
+    function updateNavBtn() {
+        if (currentCardIdx === cards.length - 1) {
+            navBtn.textContent = 'Find';
+            navBtn.type = 'submit';
+        } else {
+            navBtn.textContent = 'Next';
+            navBtn.type = 'button';
+        }
+    }
+    updateNavBtn();
+
+    navBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (navBtn.type === 'submit') {
+            // Hide all question cards
+            cards.forEach(c => {
+                c.classList.remove('active-card');
+                c.classList.add('exit-to-left');
+            });
+            // Collect all form data and submit
+            const data = {};
+            const radioFields = ['mood_today', 'occasion', 'age_appropriateness', 'timeline'];
+            for (const field of radioFields) {
+                const selected = form.querySelector(`input[name="${field}"]:checked`);
+                if(field === 'mood_today') {
+                    data['mood'] = selected ? selected.value : null;
+                } else if(field === 'timeline') {
+                    const timelineMapping = {
+                        "Doesn’t matter": 'any',
+                        "Past 5 years": '5',
+                        "Past 10 years": '10',
+                        "Past 15 years": '15',
+                        "Past 25 years": '25',
+                        "Very Old": 'very old'
+                    };
+                    data['timeline'] = selected ? timelineMapping[selected.value] : null;
+                } else {
+                    data[field] = selected ? selected.value : null;
+                }
+            }
+            // Collect checked genres
+            const checkedGenres = Array.from(form.querySelectorAll('input[name="genres"]:checked')).map(cb => cb.value);
+            data['genres'] = checkedGenres;
+            fetch('/recommend_movies', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(movies => {
+                const resultsDiv = document.getElementById('recommendationResults');
+                resultsDiv.innerHTML = '';
+                if (!movies || movies.length === 0) {
+                    resultsDiv.textContent = 'No matching movies found. Please try different preferences.';
+                    return;
+                }
+                const container = document.createElement('div');
+                container.className = 'recommendation-result-container';
+                movies.slice(0, 2).forEach(movie => {
+                    const card = document.createElement('div');
+                    card.className = 'recommendation-result-card';
+                    card.tabIndex = 0;
+                    card.onclick = function() {
+                        window.location.href = "/movie/" + movie.id;
+                    };
+                    card.innerHTML = `
+                        <img src="${movie.poster_url}" alt="${movie.title} poster" />
+                        <div class="title">${movie.title}</div>
+                        <div class="meta"><b>Release:</b> ${movie.release_date || ''}</div>
+                        <div class="meta"><b>Rating:</b> ${movie.vote_average || ''}</div>
+                        <div class="overview" style="font-size:13px; color:#555; margin-top:8px;">${movie.overview || ''}</div>
+                    `;
+                    container.appendChild(card);
+                });
+                resultsDiv.appendChild(container);
+            })
+            .catch(error => {
+                const resultsDiv = document.getElementById('recommendationResults');
+                resultsDiv.textContent = 'An error occurred while fetching recommendations.';
+                console.error('Error:', error);
+            });
+        } else {
+            // Move to next card with transitions
+            if (currentCardIdx < cards.length - 1) {
+                const currentCard = cards[currentCardIdx];
+                const nextCard = cards[currentCardIdx + 1];
+                currentCard.classList.remove('active-card');
+                currentCard.classList.add('exit-to-left');
+                nextCard.classList.remove('enter-from-right');
+                nextCard.classList.add('active-card');
+                setTimeout(() => {
+                    currentCard.classList.remove('exit-to-left');
+                    currentCard.classList.add('enter-from-right');
+                }, 500);
+                currentCardIdx += 1;
+                updateNavBtn();
+            }
+        }
+    });
+});
+</script>
+<script>
+// This script is now included in the DOMContentLoaded above to keep genre enforcement intact
+</script>
+
+<style>
+body {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(135deg, #f0f0f0, #d9e4f5);
+    margin: 0;
+    padding: 20px;
+    padding-top: 80px;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+.navbar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 15px 30px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    z-index: 1000;
+}
+
+.nav-tab {
+    background: white;
+    color: black;
+    padding: 10px 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.3s, background 0.3s, color 0.3s, box-shadow 0.3s;
+    font-weight: 600;
+    user-select: none;
+    border: 1px solid #ddd;
+}
+
+.nav-tab:hover {
+    transform: scale(1.05);
+    background: linear-gradient(45deg, #2c003e, #5a007f);
+    color: white;
+    box-shadow: 0 8px 20px rgba(90, 0, 127, 0.6);
+}
+
+.search-bar {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+#searchBox {
+    width: 300px;
+    height: 40px;
+    padding: 0 15px;
+    border: 2px solid #ccc;
+    border-radius: 20px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+#searchBox:focus {
+    border-color: #5a007f;
+}
+
+button {
+    padding: 10px 25px;
+    border-radius: 20px;
+    border: none;
+    background-color: #5a007f;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #2c003e;
+}
+
+#results {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.movie {
+    display: flex;
+    width: 80%;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    margin-bottom: 0;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s, filter 0.3s;
+    align-items: flex-start;
+    gap: 25px;
+    padding: 25px 30px;
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.movie:hover {
+    transform: scale(1.03);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    filter: brightness(1.05);
+}
+
+.movie img {
+    width: 160px;
+    height: 240px;
+    object-fit: cover;
+    border-radius: 12px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.details {
+    flex: 1;
+    padding: 20px 25px 20px 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.6;
+    word-wrap: break-word;
+    transition: color 0.3s ease;
+}
+
+.movie:hover .details {
+    color: #007bff;
+}
+
+.title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 10px;
+}
+
+.overview {
+    font-size: 15px;
+    color: #555;
+    margin: 10px 0;
+    overflow-wrap: break-word;
+}
+
+.meta {
+    font-size: 14px;
+    color: #666;
+}
+
+.meta b {
+    color: #333;
+}
+
+@media (max-width: 600px) {
+    .movie {
+        flex-direction: column;
+        width: 95%;
+        align-items: center;
+        padding: 20px 20px 25px;
+        gap: 20px;
+    }
+
+    .movie img {
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .details {
+        padding-top: 15px;
+        padding-left: 0;
+        padding-right: 0;
+        text-align: left;
+        width: 100%;
+    }
+
+    .overview {
+        margin: 12px 0 0 0;
+    }
+
+    #searchBox {
+        width: 100%;
+    }
+
+    .search-bar {
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+    }
+
+    button {
+        width: 100%;
+        max-width: 350px;
+    }
+}
+
+/* Recommendation Page Styling */
+.recommendation-form {
+    max-width: 600px;
+    margin: 40px auto;
+    position: relative;
+    overflow: hidden;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+#movieForm {
+    position: relative;
+    min-height: 350px;
+}
+.question-container {
+    position: relative;
+    min-height: 350px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+}
+.question-card {
+    background-color: white;
+    border-radius: 15px;
+    padding: 25px 30px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 18px;
+    color: #222;
+    max-width: 600px;
+    margin: 0 auto;
+    user-select: none;
+    transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s cubic-bezier(0.4,0,0.2,1);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 320px;
+}
+.question-card fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.fieldset-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 15px;
+}
+.genres-card .scroll-wrapper {
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+    border-radius: inherit;
+    box-sizing: border-box;
+    background: transparent;
+    padding-right: 12px;
+}
+.genres-card .fieldset-options {
+    max-height: none;
+    overflow: visible;
+    margin-bottom: 0;
+    padding-right: 0;
+    border-radius: 0;
+    box-sizing: border-box;
+}
+.fieldset-options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 400;
+    font-size: 17px;
+    line-height: 1.4;
+    cursor: pointer;
+    word-break: break-word;
+}
+.fieldset-options input[type="radio"],
+.fieldset-options input[type="checkbox"] {
+    margin: 0;
+    margin-right: 6px;
+    vertical-align: middle;
+    accent-color: #5a007f;
+}
+.fieldset-options span {
+    display: inline-block;
+    vertical-align: middle;
+    word-break: break-word;
+}
+.question-card.enter-from-right {
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+.question-card.exit-to-left {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+.question-card.active-card {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 2;
+}
+/* Navigation button below cards, centered, styled */
+.navigation-btn-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 38px;
+}
+.single-nav-btn {
+    padding: 14px 42px;
+    border-radius: 22px;
+    border: none;
+    background-color: #5a007f;
+    color: white;
+    font-size: 18px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.3s, box-shadow 0.3s, color 0.3s;
+    box-shadow: 0 4px 16px rgba(90, 0, 127, 0.07);
+    font-weight: 600;
+    min-width: 160px;
+    margin: 0 auto;
+    max-width: 350px;
+    width: 100%;
+}
+.single-nav-btn:hover, .single-nav-btn:focus {
+    background: linear-gradient(45deg, #2c003e, #5a007f);
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(90,0,127,0.14);
+}
+/* Result cards for recommendations */
+.recommendation-result-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    margin-top: 0;
+    flex-wrap: wrap;
+    min-height: 350px;
+}
+.recommendation-result-card {
+    background-color: white;
+    border-radius: 15px;
+    padding: 24px 28px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+    width: 210px;
+    cursor: pointer;
+    transition: transform 0.3s ease, filter 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+    text-align: center;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-weight: 600;
+    color: #222;
+    text-decoration: none;
+    min-height: 350px;
+}
+.recommendation-result-card:hover {
+    transform: scale(1.05);
+    filter: brightness(1.05);
+}
+.recommendation-result-card img {
+    width: 160px;
+    height: 240px;
+    object-fit: cover;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    margin-bottom: 15px;
+}
+.recommendation-result-card .title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #222;
+}
+.recommendation-result-card .meta {
+    font-size: 14px;
+    color: #666;
+}
+@media (max-width: 600px) {
+    .recommendation-form {
+        max-width: 95%;
+    }
+    #movieForm {
+        min-height: 320px;
+    }
+    .question-container {
+        min-height: 270px;
+    }
+    .question-card {
+        width: 100%;
+        padding: 16px 8px;
+        font-size: 16px;
+        position: absolute;
+        min-height: 270px;
+        box-sizing: border-box;
+    }
+    .navigation-btn-container {
+        margin-top: 22px;
+    }
+    .single-nav-btn {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        font-size: 16px;
+        padding: 12px 10px;
+    }
+    .question-card fieldset {
+        gap: 7px;
+    }
+    .fieldset-options {
+        gap: 10px;
+        margin-top: 15px;
+    }
+    .genres-card .scroll-wrapper {
+        max-height: 140px;
+        margin-bottom: 12px;
+        padding-right: 8px;
+        border-radius: inherit;
+        box-sizing: border-box;
+    }
+    .genres-card .fieldset-options {
+        max-height: none;
+        overflow: visible;
+        margin-bottom: 0;
+        padding-right: 0;
+        border-radius: 0;
+        box-sizing: border-box;
+    }
+    .recommendation-result-container {
+        flex-direction: column;
+        gap: 25px;
+        align-items: center;
+        min-height: 270px;
+        margin-top: 0;
+    }
+    .recommendation-result-card {
+        width: 95%;
+        max-width: 300px;
+        padding: 18px 8px;
+        min-height: 0;
+    }
+    .recommendation-result-card img {
+        width: 100%;
+        height: auto;
+    }
+}
+#recommendationResults {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 350px;
+    margin: 40px auto 0 auto;
+    max-width: 600px;
+    width: 100%;
+    box-sizing: border-box;
+}
+</style>

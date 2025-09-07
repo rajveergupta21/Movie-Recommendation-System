@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Movie Recommender</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-tab" onclick="window.location.href='/'">Home</div>
+        <div class="nav-tab" onclick="window.location.href='/recommendation'">Recommendation</div>
+    </nav>
+    <h1>Movie Recommendation System</h1>
+
+    <!-- Search box -->
+    <div class="search-bar">
+        <input type="text" id="searchBox" placeholder="Search by genre, title, or overview">
+        <button onclick="searchMovies()">Search</button>
+    </div>
+
+    <!-- Results -->
+    <div id="results"></div>
+
+    <script>
+        function goToMovie(movieId) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.transition = 'opacity 0.5s';
+            resultsDiv.style.opacity = '0';
+            setTimeout(() => {
+                window.location.href = `/movie/${movieId}`;
+            }, 500);
+        }
+
+        async function searchMovies(query = '') {
+            if (query === '') {
+                const input = document.getElementById('searchBox');
+                query = input.value.trim();
+            }
+            // Call the Flask backend
+            const response = await fetch('/recommend', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ query: query })
+            });
+
+            const data = await response.json();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.opacity = '1';
+            resultsDiv.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                resultsDiv.innerHTML = '<p>No movies found.</p>';
+                return;
+            }
+
+            // Display movies
+            data.forEach(movie => {
+                const poster = movie.poster_url ? movie.poster_url : 'https://via.placeholder.com/100x150?text=No+Image';
+                const movieDiv = document.createElement('div');
+                movieDiv.className = 'movie';
+                movieDiv.innerHTML = `
+                    <img src="${poster}" alt="Poster" class="poster">
+                    <div class="details">
+                        <div class="title">${movie.title} (${movie.release_date})</div>
+                        <div><b>Genre:</b> ${movie.genre}</div>
+                        <div class="overview">${movie.overview}</div>
+                        <div><b>Votes:</b> ${movie.vote_count} | <b>Rating:</b> ${movie.vote_average}</div>
+                    </div>`;
+                movieDiv.onclick = () => goToMovie(movie.id);
+
+
+                resultsDiv.appendChild(movieDiv);
+            });
+        }
+
+        // Load top movies on page load
+        window.onload = () => {
+            searchMovies();
+        };
+    </script>
+</body>
+</html>
